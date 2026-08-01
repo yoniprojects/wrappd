@@ -155,7 +155,8 @@ input[type=range]{ width:100%; accent-color: var(--pop); }
 /* ===== Canvas stage ===== */
 .stage-wrap{ display:flex; flex-direction:column; align-items:center; gap:14px; }
 .stage-toolbar{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:center; width:100%; max-width:540px;}
-.canvas-shell{ border-radius:24px; padding:14px; }
+.canvas-scale-outer{ width:100%; display:flex; justify-content:center; }
+.canvas-shell{ border-radius:24px; padding:14px; transform-origin:top left; }
 #canvas{
   width:540px; min-height:675px; height:auto; position:relative; border-radius:14px; overflow:hidden;
   box-shadow: 0 30px 60px rgba(0,0,0,0.5);
@@ -165,10 +166,6 @@ input[type=range]{ width:100%; accent-color: var(--pop); }
 #canvas .content-layer{ position:relative; z-index:1; padding:34px; display:flex; flex-direction:column; min-height:675px; }
 #canvas .stickers-layer{ position:absolute; inset:0; z-index:5; pointer-events:none; }
 #canvas .stickers-layer .sticker{ pointer-events:auto; }
-
-/* iOS phone canvas mode — matches iPhone screen proportions (390x844 pt / 1170x2532px @3x) */
-#canvas.device-phone{ width:390px; min-height:844px; border-radius:30px; }
-#canvas.device-phone .content-layer{ min-height:844px; padding:30px 24px; }
 
 .period-tag{ font-family:'Space Mono', monospace; font-size:11px; letter-spacing:2px; opacity:.85; padding:4px 12px; border-radius:20px; border:1px solid currentColor; display:inline-flex; align-self:flex-start; margin-bottom:10px;}
 .wrap-title{ font-family:'Fraunces', serif; font-weight:900; font-size:44px; line-height:0.98; margin:0 0 4px; outline:none; letter-spacing:-1px; word-break:break-word;}
@@ -222,6 +219,36 @@ input[type=range]{ width:100%; accent-color: var(--pop); }
 .sticker.selected .h-del{ display:flex; }
 
 .footer-credit{ text-align:center; opacity:.35; font-size:11.5px; padding:30px 0 10px; }
+
+/* ===== Mobile responsiveness ===== */
+@media (max-width:720px){
+  header.topbar{ padding:14px 16px; }
+  .brand{ font-size:19px; }
+  .topbar-actions{ gap:7px; }
+  .btn{ padding:8px 12px; font-size:12.5px; }
+  main{ padding:16px; }
+  .hero-strip{ padding:14px 0 6px; }
+  .hero-strip h1{ font-size:32px; }
+  .hero-strip p{ font-size:14px; }
+  .section-title{ font-size:20px; }
+  .grid-cards{ grid-template-columns:repeat(auto-fill, minmax(140px,1fr)); gap:12px; }
+  .saved-row{ grid-template-columns:repeat(auto-fill, minmax(120px,1fr)); gap:10px; }
+
+  .editor{ gap:14px; }
+  .panel{ position:static; max-height:none; overflow:visible; padding:14px; }
+  .tabs{ position:sticky; top:0; z-index:10; background:rgba(20,18,26,0.92); backdrop-filter:blur(10px); margin:-14px -14px 14px; padding:10px 14px; border-radius:20px 20px 0 0; }
+  .tab-btn{ min-width:0; padding:9px 4px; font-size:11px; }
+
+  .stage-toolbar{ gap:6px; }
+  .stage-toolbar .btn{ font-size:12px; padding:8px 10px; }
+  #exportHint{ font-size:11px; padding:0 6px; }
+}
+
+@media (max-width:400px){
+  .hero-strip h1{ font-size:27px; }
+  .tabs{ gap:4px; }
+  .tab-btn{ font-size:10.2px; padding:8px 3px; }
+}
 </style>
 </head>
 <body>
@@ -439,26 +466,24 @@ input[type=range]{ width:100%; accent-color: var(--pop); }
       <!-- CANVAS STAGE -->
       <div class="stage-wrap">
         <div class="stage-toolbar">
-          <div class="seg" id="deviceSeg" style="max-width:190px;">
-            <button data-v="pc">🖥️ PC</button>
-            <button data-v="phone">📱 Phone</button>
-          </div>
           <button class="btn ghost small" id="backBtn">← Back</button>
           <button class="btn small" id="saveBtn">💾 Save</button>
           <button class="btn small" id="duplicateBtn">⧉ Duplicate</button>
           <button class="btn primary small" id="exportBtn">⬇ Export PNG</button>
           <button class="btn small" id="viewBtn">👁 View photo</button>
         </div>
-        <div class="canvas-shell glass">
-          <div id="canvas">
-            <div class="bg-layer" id="bgLayer"></div>
-            <div class="content-layer" id="contentLayer">
-              <div class="period-tag" id="periodTag">MONTHLY WRAP</div>
-              <div class="wrap-title" id="titleEl" contenteditable="true" spellcheck="false">JULY</div>
-              <div class="wrap-sub" id="subEl" contenteditable="true" spellcheck="false">6 books · Jul 1–31</div>
-              <div class="books-area" id="booksArea"></div>
+        <div class="canvas-scale-outer" id="canvasScaleOuter">
+          <div class="canvas-shell glass" id="canvasShell">
+            <div id="canvas">
+              <div class="bg-layer" id="bgLayer"></div>
+              <div class="content-layer" id="contentLayer">
+                <div class="period-tag" id="periodTag">MONTHLY WRAP</div>
+                <div class="wrap-title" id="titleEl" contenteditable="true" spellcheck="false">JULY</div>
+                <div class="wrap-sub" id="subEl" contenteditable="true" spellcheck="false">6 books · Jul 1–31</div>
+                <div class="books-area" id="booksArea"></div>
+              </div>
+              <div class="stickers-layer" id="stickersLayer"></div>
             </div>
-            <div class="stickers-layer" id="stickersLayer"></div>
           </div>
         </div>
         <div style="font-size:11.5px; opacity:.5; max-width:540px; text-align:center;" id="exportHint">1080×1350px export (grows taller automatically for longer lists) · click any book cover on the canvas to swap its image · click empty canvas space to deselect a sticker</div>
@@ -535,7 +560,7 @@ function blankWrap(){
     id: uid(), name:'Untitled wrap', period:'monthly', layout:'grid', coverStyle:'glass', font:'serif',
     textColor:'#F7F3ED', accentColor:'#FF3D7F',
     background:{type:'gradient', colors:['#7C5CFC','#22D3EE'], angle:135},
-    title:'TITLE', sub:'subtitle here', subAuto:false, device:'pc', books:[], stickers:[], updatedAt: Date.now()
+    title:'TITLE', sub:'subtitle here', subAuto:false, books:[], stickers:[], updatedAt: Date.now()
   };
 }
 function fromTemplate(t){
@@ -640,6 +665,7 @@ function showEditor(){
   galleryView.classList.add('hidden');
   editorView.classList.remove('hidden');
   renderEditorAll();
+  fitCanvasToViewport();
 }
 
 document.getElementById('navGallery').onclick = showGallery;
@@ -736,7 +762,6 @@ function bindSetupTab(){
   };
   setupSeg('periodSeg','period', renderCanvas);
   setupSeg('layoutSeg','layout', renderCanvas);
-  setupSeg('deviceSeg','device', renderCanvas);
 }
 
 /* ============================ EDITOR: BOOKS TAB ============================ */
@@ -877,7 +902,6 @@ function syncStyleTab(){
   document.querySelectorAll('#fontSeg button').forEach(b=>b.classList.toggle('active', b.dataset.v===wrap.font));
   document.querySelectorAll('#periodSeg button').forEach(b=>b.classList.toggle('active', b.dataset.v===wrap.period));
   document.querySelectorAll('#layoutSeg button').forEach(b=>b.classList.toggle('active', b.dataset.v===wrap.layout));
-  document.querySelectorAll('#deviceSeg button').forEach(b=>b.classList.toggle('active', b.dataset.v===(wrap.device||'pc')));
   document.querySelectorAll('#bgTypeSeg button').forEach(b=>b.classList.toggle('active', b.dataset.v===wrap.background.type));
   document.getElementById('textColorPick').value = wrap.textColor;
   document.getElementById('accentColorPick').value = wrap.accentColor;
@@ -994,19 +1018,33 @@ function bgCssFull(bg){
   return '#222';
 }
 
-function applyDeviceMode(){
-  const isPhone = wrap.device === 'phone';
-  document.getElementById('canvas').classList.toggle('device-phone', isPhone);
-  const hint = document.getElementById('exportHint');
-  if(hint){
-    hint.textContent = isPhone
-      ? '1170×2532px export (iPhone screen resolution) · click any book cover on the canvas to swap its image · click empty canvas space to deselect a sticker'
-      : '1080×1350px export (grows taller automatically for longer lists) · click any book cover on the canvas to swap its image · click empty canvas space to deselect a sticker';
+/* Shrinks the fixed-size (PC/1080-wide) canvas visually to fit narrow phone
+   screens using a CSS transform, so the design itself never changes — only
+   how small it's shown. The underlying #canvas element always keeps its
+   true dimensions, which is what export captures. */
+function fitCanvasToViewport(){
+  const outer = document.getElementById('canvasScaleOuter');
+  const shell = document.getElementById('canvasShell');
+  if(!outer || !shell) return;
+  // measure natural (unscaled) size
+  shell.style.transform = 'none';
+  outer.style.width = '';
+  outer.style.height = '';
+  const naturalW = shell.offsetWidth;
+  const naturalH = shell.offsetHeight;
+  if(!naturalW || !naturalH) return;
+  const available = outer.parentElement ? outer.parentElement.clientWidth : naturalW;
+  const scale = Math.min(1, available / naturalW);
+  if(scale < 1){
+    shell.style.transform = `scale(${scale})`;
+    outer.style.width = (naturalW*scale) + 'px';
+    outer.style.height = (naturalH*scale) + 'px';
   }
 }
+window.addEventListener('resize', () => fitCanvasToViewport());
+window.addEventListener('orientationchange', () => fitCanvasToViewport());
 
 function renderCanvas(){
-  applyDeviceMode();
   document.getElementById('bgLayer').style.background = bgCssFull(wrap.background);
   document.getElementById('periodTag').textContent = wrap.period.toUpperCase() + ' WRAP';
   document.getElementById('periodTag').style.color = wrap.textColor;
@@ -1028,6 +1066,7 @@ function renderCanvas(){
 
   renderBooksArea();
   renderStickers();
+  fitCanvasToViewport();
 }
 function syncCanvasText(){
   document.getElementById('titleEl').textContent = wrap.title;
@@ -1276,21 +1315,34 @@ function showSaveOverlay(dataUrl){
 async function renderWrapToDataUrl(){
   selectedStickerId = null; renderStickers();
   const canvasEl = document.getElementById('canvas');
-  const isPhone = wrap.device === 'phone';
-  const shot = await html2canvas(canvasEl, { scale:isPhone?3:2, useCORS:true, backgroundColor:'#141221' });
-  return { dataUrl: shot.toDataURL('image/png'), isPhone };
+  const shell = document.getElementById('canvasShell');
+  const outer = document.getElementById('canvasScaleOuter');
+  // temporarily remove the mobile shrink-to-fit transform so the capture
+  // always happens at true, full PC resolution regardless of screen size
+  const prevTransform = shell.style.transform;
+  const prevW = outer.style.width, prevH = outer.style.height;
+  shell.style.transform = 'none';
+  outer.style.width = ''; outer.style.height = '';
+  let shot;
+  try{
+    shot = await html2canvas(canvasEl, { scale:2, useCORS:true, backgroundColor:'#141221' });
+  } finally {
+    shell.style.transform = prevTransform;
+    outer.style.width = prevW; outer.style.height = prevH;
+  }
+  return { dataUrl: shot.toDataURL('image/png') };
 }
 
 document.getElementById('exportBtn').onclick = async () => {
   const btn = document.getElementById('exportBtn');
   const old = btn.textContent; btn.textContent = 'Rendering…'; btn.disabled = true;
   try{
-    const { dataUrl, isPhone } = await renderWrapToDataUrl();
+    const { dataUrl } = await renderWrapToDataUrl();
     if(isIOS()){
       showSaveOverlay(dataUrl);
     } else {
       const link = document.createElement('a');
-      link.download = (wrap.name || 'reading-wrap').replace(/\s+/g,'-').toLowerCase() + (isPhone?'-phone':'') + '.png';
+      link.download = (wrap.name || 'reading-wrap').replace(/\s+/g,'-').toLowerCase() + '.png';
       link.href = dataUrl;
       link.click();
     }
