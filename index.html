@@ -447,6 +447,7 @@ input[type=range]{ width:100%; accent-color: var(--pop); }
           <button class="btn small" id="saveBtn">💾 Save</button>
           <button class="btn small" id="duplicateBtn">⧉ Duplicate</button>
           <button class="btn primary small" id="exportBtn">⬇ Export PNG</button>
+          <button class="btn small" id="viewBtn">👁 View photo</button>
         </div>
         <div class="canvas-shell glass">
           <div id="canvas">
@@ -1253,20 +1254,61 @@ document.getElementById('duplicateBtn').onclick = () => {
   wraps.push(copy); persistWraps();
   wrap = copy; renderEditorAll();
 };
+function isIOS(){
+  return /iP(hone|od|ad)/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); // iPadOS 13+ reports itself as Mac
+}
+
+function showSaveOverlay(dataUrl){
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed; inset:0; z-index:999; background:rgba(10,8,16,0.97); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; padding:24px;';
+  overlay.innerHTML = `
+    <div style="font-family:'Space Grotesk',sans-serif; color:#F7F3ED; font-size:14px; font-weight:600; text-align:center; max-width:320px; line-height:1.4;">
+      Tap and hold the image below, then choose <b>"Add to Photos"</b> or <b>"Save Image"</b>.
+    </div>
+    <img src="${dataUrl}" style="max-width:90vw; max-height:68vh; border-radius:14px; box-shadow:0 20px 50px rgba(0,0,0,0.5); -webkit-touch-callout:default; user-select:auto;">
+    <button id="closeSaveOverlay" style="padding:11px 22px; border-radius:12px; border:1px solid rgba(255,255,255,0.25); background:rgba(255,255,255,0.1); color:#F7F3ED; font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:13.5px;">Done</button>
+  `;
+  document.body.appendChild(overlay);
+  document.getElementById('closeSaveOverlay').onclick = () => overlay.remove();
+}
+
+async function renderWrapToDataUrl(){
+  selectedStickerId = null; renderStickers();
+  const canvasEl = document.getElementById('canvas');
+  const isPhone = wrap.device === 'phone';
+  const shot = await html2canvas(canvasEl, { scale:isPhone?3:2, useCORS:true, backgroundColor:'#141221' });
+  return { dataUrl: shot.toDataURL('image/png'), isPhone };
+}
+
 document.getElementById('exportBtn').onclick = async () => {
   const btn = document.getElementById('exportBtn');
   const old = btn.textContent; btn.textContent = 'Rendering…'; btn.disabled = true;
-  selectedStickerId = null; renderStickers();
   try{
-    const canvasEl = document.getElementById('canvas');
-    const isPhone = wrap.device === 'phone';
-    const shot = await html2canvas(canvasEl, { scale:isPhone?3:2, useCORS:true, backgroundColor:'#141221' });
-    const link = document.createElement('a');
-    link.download = (wrap.name || 'reading-wrap').replace(/\s+/g,'-').toLowerCase() + (isPhone?'-phone':'') + '.png';
-    link.href = shot.toDataURL('image/png');
-    link.click();
+    const { dataUrl, isPhone } = await renderWrapToDataUrl();
+    if(isIOS()){
+      showSaveOverlay(dataUrl);
+    } else {
+      const link = document.createElement('a');
+      link.download = (wrap.name || 'reading-wrap').replace(/\s+/g,'-').toLowerCase() + (isPhone?'-phone':'') + '.png';
+      link.href = dataUrl;
+      link.click();
+    }
   }catch(err){
     alert('Export ran into an issue (likely a cross-origin image). Try re-uploading any tricky covers/backgrounds as your own images, then export again.');
+    console.error(err);
+  }
+  btn.textContent = old; btn.disabled = false;
+};
+
+document.getElementById('viewBtn').onclick = async () => {
+  const btn = document.getElementById('viewBtn');
+  const old = btn.textContent; btn.textContent = 'Rendering…'; btn.disabled = true;
+  try{
+    const { dataUrl } = await renderWrapToDataUrl();
+    showSaveOverlay(dataUrl);
+  }catch(err){
+    alert('Couldn\'t render the image (likely a cross-origin cover/background). Try re-uploading tricky images as your own files, then try again.');
     console.error(err);
   }
   btn.textContent = old; btn.disabled = false;
