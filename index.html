@@ -257,6 +257,17 @@ input[type=range]{ width:100%; accent-color: var(--pop); }
 </head>
 <body>
 
+<div id="bootFallback" style="position:fixed;inset:0;z-index:99999;background:#14121A;color:#F7F3ED;font-family:sans-serif;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;">
+  <div style="max-width:420px;">
+    <div style="font-size:20px;font-weight:700;margin-bottom:10px;">Loading Wrappd…</div>
+    <div style="font-size:14px;opacity:.8;line-height:1.5;">
+      If this message doesn't go away in a couple seconds, your current viewer likely isn't running the page's JavaScript.
+      Try opening this file in a full browser tab (e.g. tap the file, then choose "Open in Chrome" or "Open in Safari" instead of an in-app preview).
+    </div>
+    <div id="bootErrorDetail" style="margin-top:14px;font-size:12px;font-family:monospace;color:#FF9AB8;white-space:pre-wrap;"></div>
+  </div>
+</div>
+
 <header class="topbar">
   <div class="brand" id="brandLogo" style="cursor:pointer;"><span class="dot"></span> Wrappd</div>
   <div class="topbar-actions">
@@ -1405,7 +1416,18 @@ function initOnce(){
   loadWraps();
   showGallery();
 }
-initOnce();
+try{
+  initOnce();
+  const bf = document.getElementById('bootFallback');
+  if(bf) bf.remove();
+}catch(err){
+  console.error(err);
+  const detail = document.getElementById('bootErrorDetail');
+  if(detail) detail.textContent = 'Error: ' + (err && err.message ? err.message : err);
+}
+window.addEventListener('error', function(e){
+  console.error(e.error || e.message);
+});
 </script>
 </body>
 </html>
