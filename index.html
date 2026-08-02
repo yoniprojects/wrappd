@@ -205,8 +205,9 @@ input[type=range]{ width:100%; accent-color: var(--pop); }
 .cover-badge.fmt-both{ min-width:38px; height:24px; }
 .cover-badge svg{ width:14px; height:14px; display:block; flex-shrink:0; }
 .cover-rating{ position:absolute; bottom:4px; right:4px; font-size:9.5px; font-weight:800; padding:2px 6px; border-radius:20px; background:rgba(0,0,0,0.65); color:white; z-index:2; display:flex; align-items:center; gap:2px;}
-.cover-rating.perfect{ background:linear-gradient(92deg, var(--pop), var(--citrus) 60%, var(--cyan)); color:#14121A; box-shadow:0 0 0 1px rgba(255,255,255,0.85), 0 0 10px rgba(255,201,60,0.75); animation: perfectPulse 1.6s ease-in-out infinite; }
-@keyframes perfectPulse{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.08); } }
+.cover-rating.perfect{ background:#1B140E; border:1.5px solid var(--citrus); box-shadow:0 0 0 1px rgba(255,201,60,0.25), 0 0 8px rgba(255,201,60,0.4); padding:2px 8px 2px 6px; gap:3px; }
+.cover-rating.perfect .star{ color:var(--citrus); font-size:1.15em; line-height:1; }
+.cover-rating.perfect .num{ color:#fff; font-size:1.25em; font-weight:800; line-height:1; }
 .brow.perfect span{ color:var(--citrus); text-shadow:0 0 8px rgba(255,201,60,0.8); }
 
 /* stickers */
@@ -866,7 +867,7 @@ function renderBooksTab(){
         <input type="text" value="${escapeAttr(b.author)}" data-f="author">
         <div class="brow${Number(b.rating)===5?' perfect':''}">
           <input type="range" min="0" max="5" step="0.25" value="${b.rating}" style="flex:1;">
-          <span style="font-size:11px; width:32px;">${Number(b.rating)===5?'✨5':'★'+b.rating}</span>
+          <span style="font-size:11px; width:32px;">${Number(b.rating)===5?'★5':'★'+b.rating}</span>
         </div>
         <div class="brow">
           <div class="fmt-btns">
@@ -888,7 +889,7 @@ function renderBooksTab(){
       const isPerfect = b.rating === 5;
       const brow = el.querySelector('.brow');
       brow.classList.toggle('perfect', isPerfect);
-      brow.querySelector('span').textContent = isPerfect ? '✨5' : '★'+b.rating;
+      brow.querySelector('span').textContent = isPerfect ? '★5' : '★'+b.rating;
       renderCanvas();
     };
     el.querySelectorAll('.fmt-btns button').forEach(fb => fb.onclick = () => { b.format = fb.dataset.f; renderBooksTab(); renderCanvas(); });
@@ -1099,7 +1100,8 @@ function formatBadgeHtml(format, stroke, inline){
 
 function ratingBadgeHtml(b, extraStyle){
   const perfect = Number(b.rating) === 5;
-  return `<div class="cover-rating${perfect ? ' perfect' : ''}" style="${extraStyle||''}">${perfect ? '✨ ★ 5 ✨' : '★ '+b.rating}</div>`;
+  const inner = perfect ? `<span class="star">★</span><span class="num">5</span>` : `★ ${b.rating}`;
+  return `<div class="cover-rating${perfect ? ' perfect' : ''}" style="${extraStyle||''}">${inner}</div>`;
 }
 function coverCellHtml(b){
   return `
